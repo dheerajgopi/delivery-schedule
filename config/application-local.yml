@@ -1,0 +1,14 @@
+server:
+  port: 8080
+
+logging: # log rotation policy specified in src/main/resources/logback-spring.xml
+  path: /tmp/delivery-scheduler
+  file: ${logging.path}/delivery-scheduler-api.log
+
+spring:
+  application:
+    name: delivery-scheduler-api
+  mvc:
+    throw-exception-if-no-handler-found: true
+  resources:
+    add-mappings: false # not required since static resources in "resources" folder is not served
