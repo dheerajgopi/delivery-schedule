@@ -1,12 +1,13 @@
 package com.logistics.deliveryscheduler.v1.schedule;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import com.logistics.deliveryscheduler.common.ApiResponse;
-import com.logistics.deliveryscheduler.entity.DeliverySchedule;
+import com.logistics.deliveryscheduler.entity.Driver;
+import com.logistics.deliveryscheduler.entity.Location;
+import com.logistics.deliveryscheduler.entity.Vehicle;
 import com.logistics.deliveryscheduler.v1.schedule.dto.CreateDeliveryRequestDto;
+import com.logistics.deliveryscheduler.v1.schedule.dto.DeliveryScheduleDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -39,24 +40,25 @@ public class Controller {
      * @return delivery schedule
      */
     @PostMapping("/deliverySchedules")
-    public ResponseEntity<ApiResponse<Map<String, List<DeliverySchedule>>>> createDeliverySchedule(
+    public ResponseEntity<ApiResponse<DeliveryScheduleDto>> createDeliverySchedule(
             @RequestBody final CreateDeliveryRequestDto requestBody
     ) {
         requestBody.validate();
 
-        final List<String> locationIds = requestBody.getLocations();
-        final List<String> vehicleIds = requestBody.getVehicles();
-        final List<String> driverIds = requestBody.getDrivers();
+        final List<Location> locations = requestBody.getLocations();
+        final List<Vehicle> vehicles = requestBody.getVehicles();
+        final List<Driver> drivers = requestBody.getDrivers();
 
-        final List<DeliverySchedule> deliverySchedules = service.create(locationIds, vehicleIds, driverIds);
+        final DeliveryScheduleDto deliveryScheduleDto = service.create(locations, vehicles, drivers);
+        final List<Location> noDeliveryLocations = deliveryScheduleDto.getNoDeliveryLocations();
 
-        final ApiResponse<Map<String, List<DeliverySchedule>>> apiResponse = new ApiResponse
-                .Builder<Map<String, List<DeliverySchedule>>>()
-                .status(HttpStatus.OK.value())
-                .data(Collections.singletonMap("deliverySchedules", deliverySchedules))
+        final ApiResponse<DeliveryScheduleDto> apiResponse = new ApiResponse
+                .Builder<DeliveryScheduleDto>()
+                .status(noDeliveryLocations.size() > 0 ? HttpStatus.MULTI_STATUS.value() : HttpStatus.OK.value())
+                .data(deliveryScheduleDto)
                 .build();
 
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.status(apiResponse.getStatus()).body(apiResponse);
     }
 
 }

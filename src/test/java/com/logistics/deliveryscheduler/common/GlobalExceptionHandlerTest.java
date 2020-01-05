@@ -9,8 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
-import com.logistics.deliveryscheduler.common.errors.DeliveriesNotPossibleException;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -70,32 +68,6 @@ class GlobalExceptionHandlerTest {
 
         final ResponseEntity<ApiResponse<Object>> actual = handler
                 .handleMissingFieldsException(missingFieldsException);
-
-        assertEquals(expected.getStatusCode(), actual.getStatusCode());
-        assertNull(actual.getBody().getData());
-        assertEquals(expected.getBody().getError().getCode(), actual.getBody().getError().getCode());
-    }
-
-    @Test
-    public void testHandleDeliveriesNotPossibleException() {
-        final GlobalExceptionHandler handler = new GlobalExceptionHandler();
-
-        final ErrorData errorData = new ErrorData.Builder()
-                .code(HttpStatus.UNPROCESSABLE_ENTITY.name())
-                .message("Deliveries not possible")
-                .build();
-
-        final ApiResponse<Object> responseData = new ApiResponse.Builder<Object>()
-                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
-                .error(errorData)
-                .build();
-
-        final ResponseEntity<ApiResponse<Object>> expected = ResponseEntity
-                .status(HttpStatus.UNPROCESSABLE_ENTITY)
-                .body(responseData);
-
-        final ResponseEntity<ApiResponse<Object>> actual = handler
-                .handleDeliveriesNotPossibleException(new DeliveriesNotPossibleException("Deliveries not possible"));
 
         assertEquals(expected.getStatusCode(), actual.getStatusCode());
         assertNull(actual.getBody().getData());

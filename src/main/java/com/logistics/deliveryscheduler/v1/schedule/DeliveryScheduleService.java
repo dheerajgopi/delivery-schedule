@@ -1,29 +1,24 @@
 package com.logistics.deliveryscheduler.v1.schedule;
 
-import com.logistics.deliveryscheduler.common.errors.DeliveriesNotPossibleException;
 import com.logistics.deliveryscheduler.entity.DeliverySchedule;
+import com.logistics.deliveryscheduler.entity.Driver;
+import com.logistics.deliveryscheduler.entity.Location;
+import com.logistics.deliveryscheduler.entity.Vehicle;
+import com.logistics.deliveryscheduler.v1.schedule.dto.DeliveryScheduleDto;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Contains business logic for delivery schedule related operations.
  */
 @Service("deliveryScheduleServiceV1")
 public class DeliveryScheduleService {
-
-    /**
-     * Start of the working hours.
-     */
-    private static final LocalTime workStartTime = LocalTime.of(8, 0);
-
-    /**
-     * End of the working hours.
-     */
-    private static final LocalTime workEndTime = LocalTime.of(17, 0);
 
     /**
      * Start of the break time.
@@ -37,54 +32,61 @@ public class DeliveryScheduleService {
 
     /**
      * Create a delivery schedule.
-     * @param locationIds location ids
-     * @param vehicleIds vehicle ids
-     * @param driverIds driver ids
+     * @param locations location ids
+     * @param vehicles vehicle ids
+     * @param drivers driver ids
      * @return delivery schedules
      */
-    public List<DeliverySchedule> create(
-            final List<String> locationIds,
-            final List<String> vehicleIds,
-            final List<String> driverIds
+    public DeliveryScheduleDto create(
+            final List<Location> locations,
+            final List<Vehicle> vehicles,
+            final List<Driver> drivers
     ) {
-        int locationsRemaining = locationIds.size();
-        final int numberOfVehicles = vehicleIds.size();
-        final int numberOfDrivers =  driverIds.size();
+        int locationsRemaining = locations.size();
+        final int numberOfVehicles = vehicles.size();
+        final int numberOfDrivers =  drivers.size();
 
         final int parallelDeliveryCount = numberOfDrivers <= numberOfVehicles
                 ? numberOfDrivers
                 : numberOfVehicles;
 
-        LocalTime deliveryStartTime = workStartTime;
+        List<Location> sortedLocations = locations
+                .stream()
+                .sorted(Comparator.comparing(Location::getOpeningTime))
+                .collect(Collectors.toList());
+        LocalTime deliveryStartTime = locations.get(0).getOpeningTime();
         LocalTime breakEndTime = breakTime.plus(breakDuration);
         Duration timeTakenForDelivery = Duration.ofHours(2);
         final List<DeliverySchedule> deliverySchedules = new ArrayList<>();
+        final List<Location> noDeliveryLocations = new ArrayList<>();
 
         for (int loc = 0; loc <= locationsRemaining; loc = loc + parallelDeliveryCount) {
+
             LocalTime deliveryEndTime = deliveryStartTime.plus(timeTakenForDelivery);
-
-            if ((deliveryStartTime.equals(breakTime) || deliveryStartTime.isAfter(breakTime))
-                    && deliveryStartTime.isBefore(breakEndTime)) {
-                deliveryEndTime = deliveryEndTime.plus(Duration.between(deliveryStartTime, breakTime));
-            } else if (deliveryEndTime.isAfter(breakTime)
-                    && (deliveryEndTime.equals(breakEndTime) || deliveryEndTime.isBefore(breakEndTime))) {
-                deliveryEndTime = deliveryEndTime.plus(Duration.between(breakTime, deliveryEndTime));
-            }
-
-            if (deliveryEndTime.isAfter(workEndTime)) {
-                throw new DeliveriesNotPossibleException("Deliveries not possible within the day");
-            }
 
             for (int each = 0; each < parallelDeliveryCount; each++) {
                 if (loc + each >= locationsRemaining) {
                     break;
                 }
 
+                if ((deliveryStartTime.equals(breakTime) || deliveryStartTime.isAfter(breakTime))
+                        && deliveryStartTime.isBefore(breakEndTime)) {
+                    deliveryEndTime = deliveryEndTime.plus(Duration.between(deliveryStartTime, breakTime));
+                } else if (deliveryEndTime.isAfter(breakTime)
+                        && (deliveryEndTime.equals(breakEndTime) || deliveryEndTime.isBefore(breakEndTime))) {
+                    deliveryEndTime = deliveryEndTime.plus(Duration.between(breakTime, deliveryEndTime));
+                }
+
+                if (deliveryEndTime.isAfter(sortedLocations.get(loc).getClosingTime())) {
+                    noDeliveryLocations.add(sortedLocations.get(loc));
+                    continue;
+                }
+
                 deliverySchedules.add(DeliverySchedule
                         .builder()
-                        .vehicle(vehicleIds.get(each))
-                        .driver(driverIds.get(each))
-                        .location(locationIds.get(loc + each))
+                        .vehicle(vehicles.get(each))
+                        .driver(drivers.get(each))
+                        .location(sortedLocations.get(loc + each))
                         .deliveryStartTime(deliveryStartTime)
                         .deliveryEndTime(deliveryEndTime)
                         .build()
@@ -94,7 +96,7 @@ public class DeliveryScheduleService {
             deliveryStartTime = deliveryEndTime;
         }
 
-        return deliverySchedules;
+        return new DeliveryScheduleDto(deliverySchedules, noDeliveryLocations);
     }
 
 }

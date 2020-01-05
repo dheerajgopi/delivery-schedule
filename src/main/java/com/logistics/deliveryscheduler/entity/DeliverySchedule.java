@@ -17,17 +17,17 @@ public class DeliverySchedule {
     /**
      * Location of delivery.
      */
-    private String location;
+    private Location location;
 
     /**
      * Vehicle for delivery.
      */
-    private String vehicle;
+    private Vehicle vehicle;
 
     /**
      * Driver for delivery.
      */
-    private String driver;
+    private Driver driver;
 
     /**
      * Start time for delivery.

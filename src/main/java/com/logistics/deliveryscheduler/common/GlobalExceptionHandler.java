@@ -1,18 +1,23 @@
 package com.logistics.deliveryscheduler.common;
 
-import com.logistics.deliveryscheduler.common.errors.DeliveriesNotPossibleException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.logistics.deliveryscheduler.common.errors.InvalidFieldException;
 import com.logistics.deliveryscheduler.common.errors.MissingFieldsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Common controller for handling API exceptions.
@@ -80,26 +85,68 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Returns HTTP 422 response in case deliveries are not possible.
+     * Returns HTTP 400 response in case of invalid fields in request.
      *
-     * @param ex {@link DeliveriesNotPossibleException}
-     * @return 422 response
+     * @param ex {@link HttpMessageNotReadableException}
+     * @return 400 response
      */
     @ExceptionHandler
-    public ResponseEntity<ApiResponse<Object>> handleDeliveriesNotPossibleException(
-            final DeliveriesNotPossibleException ex
+    public ResponseEntity<ApiResponse<Object>> handleHttpMessageNotReadableException(
+            final HttpMessageNotReadableException ex
     ) {
         final ErrorData errorData = new ErrorData.Builder()
-                .code(HttpStatus.UNPROCESSABLE_ENTITY.name())
+                .code(HttpStatus.BAD_REQUEST.name())
+                .message("Invalid data format")
+                .build();
+
+        final Throwable throwableCause = ex.getCause();
+
+        // find target in case of invalid datatypes in request body
+        if (throwableCause instanceof JsonMappingException) {
+            final JsonMappingException jsonMappingException = (JsonMappingException) throwableCause;
+            final List<JsonMappingException.Reference> fieldReferences = jsonMappingException.getPath();
+            final String target = String.join(".", fieldReferences
+                    .subList(0, fieldReferences.size())
+                    .stream()
+                    .map(ref -> ref.getFieldName())
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList())
+            );
+
+            errorData.setDetails(
+                    Arrays.asList(new ErrorData.Builder().target(target).message(target.concat(" is invalid")).build())
+            );
+        }
+
+        final ApiResponse<Object> apiResponse = new ApiResponse.Builder<Object>()
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error(errorData)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiResponse);
+    }
+
+    /**
+     * Returns HTTP 400 response in case of invalid data in request.
+     *
+     * @param ex {@link InvalidFieldException}
+     * @return 400 response
+     */
+    @ExceptionHandler
+    public ResponseEntity<ApiResponse<Object>> handleInvalidFieldException(
+            final InvalidFieldException ex
+    ) {
+        final ErrorData errorData = new ErrorData.Builder()
+                .code(HttpStatus.BAD_REQUEST.name())
                 .message(ex.getMessage())
                 .build();
 
         final ApiResponse<Object> apiResponse = new ApiResponse.Builder<Object>()
-                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .status(HttpStatus.BAD_REQUEST.value())
                 .error(errorData)
                 .build();
 
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(apiResponse);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiResponse);
     }
 
     /**
