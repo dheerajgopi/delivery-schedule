@@ -5,11 +5,12 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
+import lombok.Setter;
 
 /**
  * This class represents the structure of error data in api response.
  */
-@Getter
+@Getter @Setter
 public final class ErrorData implements Serializable {
 
     /**

@@ -2,9 +2,10 @@
 
 Contains REST API for creating delivery schedules based on the locations, vehicles and drivers provided.
 * For the solution, I have ignored any sort of repository layer.
-* I have hardcoded the working and break times.
+* I have hardcoded the break times.
 * I have considered the time part only while creating delivery schedule.
-* Deliveries should be done within a day. If not possible appropriate response is given.
+* Deliveries should be done within a day.
+* Phone number and vehicle type validations are omitted for now.
 
 ### Tool set
 * Java 8
@@ -30,41 +31,65 @@ Contains REST API for creating delivery schedules based on the locations, vehicl
 #### Request body:
 ```
 {
-  "locations": ["L1", "L2", "L3"],
-  "vehicles": ["V1", "V2", "V3"],
-  "drivers": ["D1", "D2", "D3"]
+  "locations": [{
+    "name": "L1",
+    "address": "address",
+    "openingTime": "07:00:00",
+    "closingTime": "16:00:00"
+  },
+  {
+    "name": "L2",
+    "address": "address",
+    "openingTime": "07:00:00",
+    "closingTime": "08:00:00"
+  }
+],
+  "vehicles": [{
+    "registrationNumber": "V1",
+    "type": "Truck"
+  }],
+  "drivers": [{
+    "name": "D1",
+    "phone": "123"
+  }]
 }
 ```
 
 #### Sample response:
+
+If any delivery fails, the response status will be 207 (Multistatus), else 200.
+
 ```
 {
-  "status": 200,
+  "status": 207,
   "error": null,
   "data": {
-    "deliverySchedules": [
+    "deliverySchedule": [
       {
-        "location": "L1",
-        "vehicle": "V1",
-        "driver": "D1",
-        "deliveryStartTime": "08:00:00",
-        "deliveryEndTime": "10:00:00"
-      },
-      {
-        "location": "L2",
-        "vehicle": "V2",
-        "driver": "D2",
-        "deliveryStartTime": "08:00:00",
-        "deliveryEndTime": "10:00:00"
-      },
-      {
-        "location": "L3",
-        "vehicle": "V3",
-        "driver": "D3",
-        "deliveryStartTime": "08:00:00",
-        "deliveryEndTime": "10:00:00"
+        "location": {
+          "name": "L1",
+          "address": "address",
+          "openingTime": "07:00:00",
+          "closingTime": "16:00:00"
+        },
+        "vehicle": {
+          "registrationNumber": "V1",
+          "type": "Truck"
+        },
+        "driver": {
+          "name": "D1",
+          "phone": "123"
+        },
+        "deliveryStartTime": "07:00:00",
+        "deliveryEndTime": "09:00:00"
       }
-    ]
+    ],
+    "noDeliveryLocations": [{
+      "name": "L2",
+      "address": "address",
+      "openingTime": "07:00:00",
+      "closingTime": "08:00:00"
+    }]
   }
 }
 ```

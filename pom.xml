@@ -30,6 +30,12 @@
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
+        <!-- Apache commons string utilities -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.9</version>
+        </dependency>
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
