@@ -15,6 +15,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -49,15 +50,15 @@ public class CreateDeliveryRequestDto {
     public void validate() {
         final List<String> missingFields = new ArrayList<>();
 
-        if (locations.size() == 0) {
+        if (CollectionUtils.isEmpty(locations)) {
             missingFields.add("locations");
         }
 
-        if (vehicles.size() == 0) {
+        if (CollectionUtils.isEmpty(vehicles)) {
             missingFields.add("vehicles");
         }
 
-        if (drivers.size() == 0) {
+        if (CollectionUtils.isEmpty(drivers)) {
             missingFields.add("drivers");
         }
 
@@ -73,7 +74,7 @@ public class CreateDeliveryRequestDto {
     /**
      * Validate location data.
      */
-    public void validateLocations() {
+    private void validateLocations() {
         locations.forEach(location -> {
             final List<String> missingFields = new ArrayList<>();
             final LocalTime openingTime = location.getOpeningTime();
@@ -112,7 +113,7 @@ public class CreateDeliveryRequestDto {
     /**
      * Validate vehicle data.
      */
-    public void validateVehicles() {
+    private void validateVehicles() {
         vehicles.forEach(vehicle -> {
             final List<String> missingFields = new ArrayList<>();
 
@@ -133,7 +134,7 @@ public class CreateDeliveryRequestDto {
     /**
      * Validate driver data.
      */
-    public void validateDrivers() {
+    private void validateDrivers() {
         drivers.forEach(driver -> {
             final List<String> missingFields = new ArrayList<>();
 
